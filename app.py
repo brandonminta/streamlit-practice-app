@@ -18,12 +18,11 @@ def load_model():
 modelo, df_poblacion, provincias_entrenadas = load_model()
 
 # === Streamlit UI ===
-st.set_page_config(page_title="ECU911 Predictor", page_icon="🚑", layout="centered")
+st.set_page_config(page_title="ECU911 Predictor", layout="centered")
 st.title("Predicción de emergencias ECU911")
-st.markdown("Modelo **Negativo Binomial** entrenado con datos 2021–2025.")
 
 # Sidebar inputs
-st.sidebar.header("🔧 Parámetros de predicción")
+st.sidebar.header("Parámetros de predicción")
 provincia = st.sidebar.selectbox("Provincia", provincias_entrenadas)
 start_date = st.sidebar.date_input("Fecha de inicio", date(2025, 1, 1))
 end_date = st.sidebar.date_input("Fecha final", date(2025, 3, 31))
