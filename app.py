@@ -49,12 +49,19 @@ def predecir_incidentes(provincia, start_date, end_date, modelo, df_poblacion, p
     cat_dtype = pd.api.types.CategoricalDtype(categories=provincias_entrenadas)
     df_futuro["provincia"] = df_futuro["provincia"].astype(cat_dtype)
 
+    # --- Crear matriz de diseño
     rhs = "C(provincia) + es_fin_semana + C(dia_semana) + es_feriado + sin_mes + cos_mes + anio"
     X_fut = pt.dmatrix(rhs, df_futuro, return_type="dataframe")
 
-    df_futuro["pred_nb"] = modelo.predict(X_fut, offset=df_futuro["log_pop"])
-    total = df_futuro["pred_nb"].sum()
-    return df_futuro, total
+    # --- Predicción segura (maneja caso de una sola fila)
+    X_arr = np.asarray(X_fut)
+    offset_arr = np.asarray(df_futuro["log_pop"]).reshape(-1, 1)
+
+    pred_vals = modelo.predict(X_arr, offset=df_futuro["log_pop"])
+    df_futuro["pred_nb"] = np.ravel(pred_vals)
+
+    total = float(df_futuro["pred_nb"].sum())
+    return df_futuro[["fecha", "provincia", "pred_nb"]], total
 
 # === Prediction button
 if st.sidebar.button("Predecir"):
