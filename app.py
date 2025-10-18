@@ -30,6 +30,8 @@ end_date = st.sidebar.date_input("Fecha final", date(2025, 3, 31))
 if start_date > end_date:
     st.error("La fecha inicial debe ser anterior a la final.")
     st.stop()
+if start_date == end_date:
+    st.warning("Seleccionaste el mismo día — se mostrará la predicción para un único día.")
 
 # === Prediction function (inline)
 def predecir_incidentes(provincia, start_date, end_date, modelo, df_poblacion, provincias_entrenadas):
@@ -50,18 +52,22 @@ def predecir_incidentes(provincia, start_date, end_date, modelo, df_poblacion, p
     df_futuro["provincia"] = df_futuro["provincia"].astype(cat_dtype)
 
     # --- Crear matriz de diseño
+    # --- Crear matriz de diseño (asegurando mismas columnas del modelo)
     rhs = "C(provincia) + es_fin_semana + C(dia_semana) + es_feriado + sin_mes + cos_mes + anio"
     X_fut = pt.dmatrix(rhs, df_futuro, return_type="dataframe")
 
-    # --- Predicción segura (maneja caso de una sola fila)
-    X_arr = np.asarray(X_fut)
-    offset_arr = np.asarray(df_futuro["log_pop"]).reshape(-1, 1)
+    # Reordenar columnas para que coincidan con el modelo entrenado
+    X_fut = X_fut.reindex(columns=modelo.model.exog_names, fill_value=0)
 
-    pred_vals = modelo.predict(X_arr, offset=df_futuro["log_pop"])
+    # --- Predicción segura (maneja un solo día o rangos)
+    offset_arr = df_futuro["log_pop"].astype(float).values
+
+    pred_vals = modelo.predict(X_fut, offset=offset_arr)
     df_futuro["pred_nb"] = np.ravel(pred_vals)
 
     total = float(df_futuro["pred_nb"].sum())
     return df_futuro[["fecha", "provincia", "pred_nb"]], total
+
 
 # === Prediction button
 if st.sidebar.button("Predecir"):
